@@ -22,7 +22,7 @@ http://www.ncbi.nlm.nih.gov/books/NBK25499/
 
 ## Usage
 
-python3 seqFetch.py YP_XXXXXXXXX.X
+    python3 seqFetch.py YP_XXXXXXXXX.X
 
 This will write 3 files in the working directory:
 * The full Entrez gene record for the requested accession ID
@@ -37,7 +37,7 @@ positive direction.  This results in the output sequence having an
 extra base, i.e. len(seq) % 3 != 0 that isn't actually part of the
 sequence.
 
-The XPath queries used are __very__ generic and could easily break if
+The XPath queries used are _very_ generic and could easily break if
 the returned XML is in a different order.  During testing the API
 always returned in the same order (as it should), but it could change
 in the future.

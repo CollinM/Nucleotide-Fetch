@@ -1,15 +1,16 @@
 import argparse
+import sys
 from urllib.request import urlopen
 import xml.etree.ElementTree as ET
     
 baseURL = "http://eutils.ncbi.nlm.nih.gov/entrez/eutils/"
-esearch = baseURL + "esearch.fcgi?db=gene&term="
+entrezSearch = baseURL + "esearch.fcgi?db=gene&term="
 genefetch = baseURL + "efetch.fcgi?db=gene&retmode=xml&id=";
-protfetch = baseURL + "efetch.fcgi?db=protein&query_key={}&rettype=fasta&retmode=text"
 nucfetch = baseURL + "efetch.fcgi?db=nuccore&id={}&strand={}&seq_start={}&seq_stop={}&rettype=fasta&retmode=text"
 strand = {'plus': 1, 'minus': 2}
 
 def parseArgs():
+    """Parse command line arguments"""
     parser = argparse.ArgumentParser("Convert GI refs to protein sequence")
     parser.add_argument("accid", type=str, help="accession ID")
     return parser.parse_args()
@@ -22,7 +23,7 @@ def getGeneXML(accid):
     """
     def search(query):
         print("Searching \"{}\"".format(query))
-        sHandle = urlopen(esearch + query)
+        sHandle = urlopen(entrezSearch + query)
         doc = sHandle.read()
         #writeXML(doc, args.accid + '.txt')
         xml = ET.XML(doc)
@@ -30,7 +31,7 @@ def getGeneXML(accid):
         print("Resulting ID: {}".format(result))
         return result
 
-    def geneFetch(ID):
+    def fetchGene(ID):
         url = genefetch + ID.strip()
         urlHandle = urlopen(url)
         return (urlHandle.read())
@@ -41,10 +42,15 @@ def getGeneXML(accid):
         filePtr.write(doc)
         filePtr.close()
 
-    searchID = search(accid)
-    geneDoc = geneFetch(searchID)
-    writeXML(geneDoc, args.accid)
-    return ET.XML(geneDoc)
+    try:
+        searchID = search(accid)
+        geneDoc = fetchGene(searchID)
+        writeXML(geneDoc, args.accid)
+        return ET.XML(geneDoc)
+    except AttributeError:
+        print("Search for {} returned 0 results!".format(accid))
+        print("EXITING EARLY!")
+        sys.exit(0)
 
 def parseXML(xml):
     result = {}
@@ -63,18 +69,19 @@ def writeDoc(strList, filename):
         for s in strList:
             print(s, file=filePtr)
 
-def protFetch(ID):
-    print("Fetching")
-    fHandle = urlopen(efetch.format(ID))
-    return ET.XML(fHandle.read())
+def fetchNuc(refseq, direction, start, end):
+    """
 
-def nucFetch(refseq, direction, start, end):
+    """
     print("Retrieving nucleotide sequence...")
     url = nucfetch.format(refseq, strand[direction], start, end)
     doc = urlopen(url).read()
     return doc
 
 def getNextAccId(accid, direction):
+    """
+    Get the accession ID for the next gene on the correct strand.
+    """
     for i in range(len(accid)):
         try:
             if accid[i] == '0':
@@ -90,12 +97,6 @@ def getNextAccId(accid, direction):
         num -= 1
     return prefix + str(num)
 
-def joinSeq(fastaList):
-    seq = ""
-    for l in fastaList:
-        seq += l
-    return seq
-
 if __name__ == "__main__":
     args = parseArgs()
 
@@ -104,7 +105,7 @@ if __name__ == "__main__":
     gene1Info = parseXML(xml)
     start = gene1Info['to'] if gene1Info['direction'] == 'minus' else gene1Info['from']
 
-    # Retrieve xml for following gene
+    # Retrieve xml for next gene
     nextID = getNextAccId(args.accid, gene1Info['direction'])
     xml = getGeneXML(nextID)
     gene2Info = parseXML(xml)
@@ -112,12 +113,16 @@ if __name__ == "__main__":
 
     # Fetch nucleotides in FASTA
     print("Sequence span and strand:" + str(start) + " - " + str(end) + ', ' + gene1Info['direction'])
-    fasta = nucFetch(gene2Info['gi'], gene1Info['direction'], start, end).decode('utf-8')
+    fasta = fetchNuc(gene2Info['gi'], gene1Info['direction'], start, end).decode('utf-8')
 
     # Manipulate FASTA into list
     fasta = fasta.split('\n')
-    fastaTail = fasta[1:]
-    seq = joinSeq(fastaTail)
+
+    # Translate nucleotides to amino acids
+    # fastaTail = fasta[1:]
+    # seq = ""
+    # for l in fastaTail:
+    #     seq += l
 
     # Write to file
     writeDoc(fasta, gene2Info['refseq'])

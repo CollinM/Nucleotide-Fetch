@@ -45,7 +45,7 @@ def getGeneXML(accid):
     try:
         searchID = search(accid)
         geneDoc = fetchGene(searchID)
-        writeXML(geneDoc, args.accid)
+        writeXML(geneDoc, accid)
         return ET.XML(geneDoc)
     except AttributeError:
         print("Search for {} returned 0 results!".format(accid))

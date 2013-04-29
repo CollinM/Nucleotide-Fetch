@@ -34,7 +34,7 @@ This will write 3 files in the working directory:
 As of this writing, Entrez Gene is displaying an odd behavior where
 the nucleotide indices bounding the sequence are off by one in the
 positive direction.  This results in the output sequence having an
-extra base, i.e. len(seq) % 3 != 0 that isn't actually part of the
+extra base, i.e. len(seq) % 3 != 0, that isn't actually part of the
 sequence.
 
 The XPath queries used are _very_ generic and could easily break if
@@ -42,3 +42,6 @@ the returned XML is in a different order.  During testing the API
 always returned in the same order (as it should), but it could change
 in the future.
 
+If the script is used multiple times in a row, genes in the same 
+organism will have the same filename for the fasta sequence output, 
+i.e the first result will be overwritten by the second set of results.

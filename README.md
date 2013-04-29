@@ -42,6 +42,6 @@ the returned XML is in a different order.  During testing the API
 always returned in the same order (as it should), but it could change
 in the future.
 
-If the script is used multiple times in a row, genes in the same 
-organism will have the same filename for the fasta sequence output, 
+If the script is used multiple times in a row, genes in the same
+organism will have the same filename for the fasta sequence output,
 i.e the first result will be overwritten by the second set of results.
